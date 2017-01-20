@@ -64,7 +64,7 @@ int registerUser(int sock){
     password = strdup(pch);
     string command;
     command = "select username from users where username like \'";
-    command.append(username);
+    command.append(dbAccess.esc(username));
     command.append("\'");
     r = dbAccess.exec(command);
     if(r.size() > 0) {
@@ -74,7 +74,7 @@ int registerUser(int sock){
     char passhash[1000];
     passToSHA512(password,passhash);
     command = "INSERT into users (username, passhash) VALUES (\'";
-    command.append(username);
+    command.append(dbAccess.esc(username));
     command.append("\', \'");
     command.append(passhash);
     command.append("\');");
@@ -113,7 +113,7 @@ int loginUser(int sock,char * username){
     password = strdup(pch);
     passToSHA512(password,passhash);
     string command = "select * from users where username like \'";
-    command.append(username);
+    command.append(dbAccess.esc(username));
     command.append("\' and passhash like \'");
     command.append(passhash);
     command.append("\'");
@@ -152,12 +152,12 @@ int getPosts(int sock,char * username){
     }
     //if(strcmp(username,from) != 0) {
         command = "select * from (select * from posts where author = \'";
-        command.append(from);
+        command.append(dbAccess.esc(from));
         command += "\' order by date desc ) as foo OFFSET ";
-        command.append(index);
+        command.append(dbAccess.esc(index));
         command += " LIMIT";
         command.append(count);
-        result r = dbAccess.exec(command);
+        result r = dbAccess.exec(dbAccess.esc(command));
         string postCount = to_string(r.size());
         sendMessage(sock,postCount);
         for(int i = 0; i < r.size(); i++){
@@ -192,11 +192,12 @@ int makePost(int sock,char * username){
     pch = strtok(NULL,":");
     post = strdup(pch);
     string command = "INSERT INTO public.posts(author, type, text, date) VALUES (\'";
-    command.append(username);
+    command.append(dbAccess.esc(username));
     command += "\',";
     command.append(type);
     command +=", \'";
-    command.append(post);
+    command.append(dbAccess.esc(post));
+
     command +="\', current_timestamp)";
     try{
         dbAccess.exec(command.c_str());
