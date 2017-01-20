@@ -72,12 +72,14 @@ int openServerSocket(const char *servspec) {
 
 void startConnection(int sock) {
     ssize_t r;
-    char *username = NULL;
+    char *username = new char[26];
+
     while (getSocketState(sock) == OPEN) {
         unsigned long messageSize;
 		messageSize = readInt(sock);
 		if(messageSize != 3) break;
 		char * reqBuffer = new char[messageSize+1];
+        reqBuffer[3] = 0;
 		read(sock,reqBuffer,messageSize);
 		handleRequest(reqBuffer,username,sock);
     }
@@ -85,7 +87,7 @@ void startConnection(int sock) {
 }
 
 void clientHandlerLoop(const char *server_spec) {
-	
+	char * username;
     int sock = openServerSocket(server_spec);
     while (true) {
         printf("[server]Waiting for client connection\n");
@@ -98,7 +100,7 @@ void clientHandlerLoop(const char *server_spec) {
 
 
 int main(int argc, char *argv[]) {
-	const char *server = "192.168.100.8:1337";
+	const char *server = "127.0.0.1:1337";
 	LOGS = fopen("log.txt","w");
     signal(SIGPIPE, SIG_IGN);
     if (argc > 1) server = argv[1];

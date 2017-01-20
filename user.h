@@ -18,6 +18,8 @@
 #include <string.h>
 #include <iostream>
 #include <unistd.h>
+#include <stdlib.h>
+#include <cstdlib>
 
 using namespace std;
 using namespace pqxx;

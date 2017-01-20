@@ -19,23 +19,23 @@ using namespace pqxx;
 #ifndef REQUESTHANDLER_H
 #define REQUESTHANDLER_H
 
-void handleRequest(string req,char * username, int sd);
+void handleRequest(string req,char * username,int sd);
 
-int loginUser(int sd);
+int loginUser(int sock,char * username);
 
-int registerUser(int sd);
+int registerUser(int sock);
 
-int getPosts(int sd);
+int getPosts(int sock,char* username);
 
-int makePost(int sd);
+int makePost(int sock,char* username);
 
-int getPM(int sd);
+int getPM(int sock,char* username);
 
-int sendPM(int sd);
+int sendPM(int sock,char* username);
 
-int addFriend(int sd);
+int addFriend(int sock,char* username);
 
-int deleteFriend(int sd);
+int deleteFriend(int sock,char* username);
 
 #endif /* REQUESTHANDLER_H */
 
