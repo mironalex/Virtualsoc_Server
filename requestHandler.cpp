@@ -150,24 +150,24 @@ int getPosts(int sock,char * username){
         sendMessage(sock,"Error, client not logged in.");
         return 0;
     }
-    //if(strcmp(username,from) != 0) {
+    if(strcmp(username,from) != 0) {
         command = "select * from (select * from posts where author = \'";
         command.append(dbAccess.esc(from));
         command += "\' order by date desc ) as foo OFFSET ";
         command.append(dbAccess.esc(index));
         command += " LIMIT";
         command.append(count);
-        result r = dbAccess.exec(dbAccess.esc(command));
+        result r = dbAccess.exec(command);
         string postCount = to_string(r.size());
         sendMessage(sock,postCount);
         for(int i = 0; i < r.size(); i++){
             sendMessage(sock,r[i][2].as<string>());
         }
         return 1;
-    //}
-    //else{
+    }
+    else{
 
-//    }
+    }
 }
 
 int makePost(int sock,char * username){
@@ -226,7 +226,50 @@ int sendPM(int sock,char * username){
 }
 
 int addFriend(int sock,char * username){
+    work dbAccess(dbConnection);
 
+    //Getting and parsing the package sent from the client
+
+    char buffer[1000], *pch,befriend[26],type[2];
+    int bufferSize;
+    bufferSize = readInt(sock);
+    read(sock,buffer,bufferSize);
+    pch = strtok(buffer,":");
+    strcpy(type,pch);
+    pch = strtok(NULL,":");
+    strcpy(befriend,pch);
+
+    //Check if the user to be added as a friend exists or not
+
+    string command = "select username from users where username like \'";
+    command.append(dbAccess.esc(befriend));
+    command.append("\'");
+    result r = dbAccess.exec(command);
+    if(r.size() == 0) {
+        sendMessage(sock, "Error, invalid user...");
+        return 0;
+    }
+
+    //Getting ready to add friend relationship to the DB
+
+    command = "INSERT INTO public.friends(username, friend_username, type) VALUES (\'";
+    command+= dbAccess.esc(username) + "\', \'" + dbAccess.esc(befriend) + "\', " + dbAccess.esc(type) +")";
+    try{
+        dbAccess.exec(command.c_str());
+        dbAccess.commit();
+    }
+    catch(pqxx::pqxx_exception &e){
+        cerr << e.base().what() << "\nSQL ERROR\n" << endl;
+        sendMessage(sock,"Friend Add Failed.");
+        return 0;
+    }
+    catch(const exception &e){
+        cerr << e.what() << endl;
+        sendMessage(sock,"Friend Add Failed");
+        return 0;
+    }
+    sendMessage(sock,"Friend Added Successful.");
+    return 1;
 }
 
 int deleteFriend(int sock,char * username){
