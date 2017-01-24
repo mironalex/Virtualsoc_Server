@@ -29,6 +29,8 @@ using namespace pqxx;
 
 int readInt (int fd);
 
+void sendInt (int fd,int x);
+
 void sendMessage(int fd, string message);
 
 int getUser(char *input, int n, FILE * input_stream);

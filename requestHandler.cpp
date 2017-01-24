@@ -155,24 +155,39 @@ int getPosts(int sock,char * username){
         command.append(dbAccess.esc(from));
         command += "\' order by date desc ) as foo OFFSET ";
         command.append(dbAccess.esc(index));
-        command += " LIMIT";
+        command += " LIMIT ";
         command.append(count);
         result r = dbAccess.exec(command);
         string postCount = to_string(r.size());
         sendMessage(sock,postCount);
         for(int i = 0; i < r.size(); i++){
-            sendMessage(sock,r[i][2].as<string>());
+            sendMessage(sock,r[i][0].as<string>());
+            sendMessage(sock,r[i][1].as<string>());
         }
         return 1;
     }
     else{
-
+        command = "select * from (select author,text,date from posts p ";
+        command += "join friends f on p.author = f.username ";
+        command += "where friend_username = \'"; command.append(username);
+        command += "\' and p.type <= f.type ";
+        command += "order by date desc ) recentPosts ";
+        command += "OFFSET "; command.append(index);
+        command += " LIMIT "; command.append(count);
+        result r = dbAccess.exec(command);
+        string postCount = to_string(r.size());
+        sendMessage(sock,postCount);
+        for(int i = 0; i < r.size(); i++){
+            sendMessage(sock,r[i][0].as<string>());
+            sendMessage(sock,r[i][1].as<string>());
+        }
+        return 1;
     }
 }
 
 int makePost(int sock,char * username){
     work dbAccess(dbConnection);
-    char buffer[300], *post,*pch,*type;
+    char buffer[300], *post,*pch,type[10];
     int bufferSize;
     bufferSize = readInt(sock);
     if(bufferSize > 300) {
@@ -184,13 +199,23 @@ int makePost(int sock,char * username){
         sendMessage(sock, "Error, you are not logged in.");
         return 0;
     }
-    pch = strtok(buffer,":");
-    type = strdup(pch);
+    int i = 0;
+    while(buffer[i]!=':'){
+        type[i] = buffer[i];
+        i++;
+    }
+    i++;
+    post = new char[bufferSize-i];
+    int j = 0;
+    while(i < bufferSize-1){
+        post[j] = buffer[i];
+        i++;
+        j++;
+    }
+    post[j] = 0;
     if(atoi(type) < 0 || atoi(type) > 3) {
         sendMessage(sock,"Invalid friend type...");
     }
-    pch = strtok(NULL,":");
-    post = strdup(pch);
     string command = "INSERT INTO public.posts(author, type, text, date) VALUES (\'";
     command.append(dbAccess.esc(username));
     command += "\',";
@@ -273,6 +298,6 @@ int addFriend(int sock,char * username){
 }
 
 int deleteFriend(int sock,char * username){
-
+    work dbAccess(dbConnection);
 }
 
