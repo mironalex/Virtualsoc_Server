@@ -9,6 +9,8 @@
 #define GET_POSTS "GET" //requests to get posts from a user
 #define MAKE_POST "PST" //requests to make a post
 #define GET_PM "GPM" //requests to get a PM
+#define GET_FRIENDS "GFL" //requests to get the friend list of a user
+#define GET_FRIEND_REQUESTS "GFR" //requests to get all of the friend requests of a user
 #define SEND_PM "SPM" //requests to send a PM to a conversation
 #define ADD_FRIEND "ADD" //requests to add a friend
 #define DELETE_FRIEND "DEL" //requests to delete a friend
@@ -41,9 +43,15 @@ void handleRequest(string req, char * username, int sd){
 	else if(req == LOGIN_USER){
 	    loginUser(sd,username);
 	}
+    else if(req == GET_FRIENDS){
+        getFriends(sd,username);
+    }
+    else if(req == GET_FRIEND_REQUESTS){
+        getFriendRequests(sd,username);
+    }
 	else{
-		exit(1);
-	}
+        exit(1);
+    }
 }
 
 int registerUser(int sock){
@@ -167,11 +175,11 @@ int getPosts(int sock,char * username){
         return 1;
     }
     else{
-        command = "select * from (select author,text,date from posts p ";
-        command += "join friends f on p.author = f.username ";
-        command += "where friend_username = \'"; command.append(username);
-        command += "\' and p.type <= f.type ";
-        command += "order by date desc ) recentPosts ";
+        command = "select author,text,to_char(date,'dd-mm-yyyy HH:mm') from posts where author in (select f.username from friends f where f.friend_username = '";
+        command.append(username);
+        command += "' and f.username in(select f2.friend_username from friends f2 where f2.username = '";
+        command.append(username);
+        command += "'))order by date desc ";
         command += "OFFSET "; command.append(index);
         command += " LIMIT "; command.append(count);
         result r = dbAccess.exec(command);
@@ -180,6 +188,7 @@ int getPosts(int sock,char * username){
         for(int i = 0; i < r.size(); i++){
             sendMessage(sock,r[i][0].as<string>());
             sendMessage(sock,r[i][1].as<string>());
+            sendMessage(sock,r[i][2].as<string>());
         }
         return 1;
     }
@@ -275,6 +284,17 @@ int addFriend(int sock,char * username){
         return 0;
     }
 
+    //Check if the user to be added as a friend isn't already added as a friend
+
+    command = "select * from friends where username = '"; command.append(dbAccess.esc(username));
+    command+= "' and friend_username = '"; command.append(dbAccess.esc(befriend));
+    command+="'";
+    r = dbAccess.exec(command);
+    if(r.size() != 0){
+        sendMessage(sock, "Error, user is already your friend.");
+        return 0;
+    }
+
     //Getting ready to add friend relationship to the DB
 
     command = "INSERT INTO public.friends(username, friend_username, type) VALUES (\'";
@@ -299,5 +319,44 @@ int addFriend(int sock,char * username){
 
 int deleteFriend(int sock,char * username){
     work dbAccess(dbConnection);
+    work escaper(dbConnection);
+    char * exFriend;
+    int exFriendSize;
+    exFriendSize = readInt(sock);
+    exFriend = new char[exFriendSize+1];
+    read(sock,exFriend,exFriendSize);
+    exFriend[exFriendSize] = 0;
+    string command = "DELETE FROM public.friends WHERE (username = '"; command.append(escaper.esc(username));
+    command+= "' and friend_username = '"; command.append(escaper.esc(exFriend));
+    command+= ") or (username = '"; command.append(escaper.esc(exFriend));
+    command+= "' and friend_username = '"; command.append(escaper.esc(username));
+    command+="')";
+    dbAccess.exec(command);
+    dbAccess.commit();
 }
 
+int getFriends(int sock, char* username){
+    work dbAccess(dbConnection);
+    string command = "select * from friends f where f.friend_username = '"; command.append(dbAccess.esc(username));
+    command+="' and f.username in(select f2.friend_username from friends f2 where f2.username = '"; command.append(dbAccess.esc(username));
+    command+="')";
+    result r = dbAccess.exec(command);
+    string postCount = to_string(r.size());
+    sendMessage(sock,postCount);
+    for(int i = 0; i < r.size(); i++){
+        sendMessage(sock,r[i][0].c_str());
+    }
+}
+
+int getFriendRequests(int sock, char* username){
+    work dbAccess(dbConnection);
+    string command = "select * from friends f where f.friend_username = '"; command.append(dbAccess.esc(username));
+    command+="' and f.username not in(select f2.friend_username from friends f2 where f2.username = '"; command.append(dbAccess.esc(username));
+    command+="')";
+    result r = dbAccess.exec(command);
+    string postCount = to_string(r.size());
+    sendMessage(sock,postCount);
+    for(int i = 0; i < r.size(); i++){
+        sendMessage(sock,r[i][0].c_str());
+    }
+}

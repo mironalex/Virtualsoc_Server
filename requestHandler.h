@@ -37,5 +37,9 @@ int addFriend(int sock,char* username);
 
 int deleteFriend(int sock,char* username);
 
+int getFriends(int sock,char* username);
+
+int getFriendRequests(int sock, char* username);
+
 #endif /* REQUESTHANDLER_H */
 
