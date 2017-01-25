@@ -17,7 +17,7 @@
 #define REGISTER_USER "REG" //requests to register a user
 #define LOGIN_USER "LOG" //requests to login
 
-connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+
 void handleRequest(string req, char * username, int sd){
 	if(req == GET_POSTS){
 		getPosts(sd,username);
@@ -55,6 +55,7 @@ void handleRequest(string req, char * username, int sd){
 }
 
 int registerUser(int sock){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
     char * password, *username;
     result r;
@@ -104,6 +105,7 @@ int registerUser(int sock){
     return 1;
 }
 int loginUser(int sock,char * username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
     char * password,buffer[100],passhash[1000];
     int x;
@@ -139,6 +141,7 @@ int loginUser(int sock,char * username){
 }
 
 int getPosts(int sock,char * username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
     char buffer[1000],*index,*count,*pch,*from;
     int bufferSize;
@@ -195,6 +198,7 @@ int getPosts(int sock,char * username){
 }
 
 int makePost(int sock,char * username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
     char buffer[300], *post,*pch,type[10];
     int bufferSize;
@@ -252,6 +256,7 @@ int makePost(int sock,char * username){
 }
 
 int getPM(int sock,char * username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
     char * partner;
     int partnerSize = readInt(sock);
@@ -276,6 +281,7 @@ int getPM(int sock,char * username){
 }
 
 int sendPM(int sock,char * username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
     char * reciever, *message;
     int recieverSize, messageSize;
@@ -299,6 +305,7 @@ int sendPM(int sock,char * username){
 }
 
 int addFriend(int sock,char * username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
 
     //Getting and parsing the package sent from the client
@@ -357,6 +364,7 @@ int addFriend(int sock,char * username){
 }
 
 int deleteFriend(int sock,char * username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
     work escaper(dbConnection);
     char * exFriend;
@@ -375,6 +383,7 @@ int deleteFriend(int sock,char * username){
 }
 
 int getFriends(int sock, char* username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
     string command = "select * from friends f where f.friend_username = '"; command.append(dbAccess.esc(username));
     command+="' and f.username in(select f2.friend_username from friends f2 where f2.username = '"; command.append(dbAccess.esc(username));
@@ -388,6 +397,7 @@ int getFriends(int sock, char* username){
 }
 
 int getFriendRequests(int sock, char* username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
     string command = "select * from friends f where f.friend_username = '"; command.append(dbAccess.esc(username));
     command+="' and f.username not in(select f2.friend_username from friends f2 where f2.username = '"; command.append(dbAccess.esc(username));
