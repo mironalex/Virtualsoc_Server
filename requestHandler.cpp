@@ -252,11 +252,50 @@ int makePost(int sock,char * username){
 }
 
 int getPM(int sock,char * username){
+    work dbAccess(dbConnection);
+    char * partner;
+    int partnerSize = readInt(sock);
+    partner = new char[partnerSize+1];
+    partner[partnerSize] = 0;
+    read(sock,partner,partnerSize);
 
+    string command ="select sender,message,to_char(date,'dd-mm-yyyy HH:mm') from pms where (sender = '"; command.append(username);
+    command+= "' and reciever = '"; command.append(partner);
+    command+= "') or (sender ='"; command.append(partner);
+    command+= "' and reciever = '"; command.append(username); command+="') ORDER BY date asc";
+
+    result r = dbAccess.exec(command);
+
+    sendMessage(sock,to_string(r.size()));
+
+    for(int i = 0 ; i < r.size(); i++){
+        sendMessage(sock,r[i][0].as<string>());
+        sendMessage(sock,r[i][1].as<string>());
+        sendMessage(sock,r[i][2].as<string>());
+    }
 }
 
 int sendPM(int sock,char * username){
+    work dbAccess(dbConnection);
+    char * reciever, *message;
+    int recieverSize, messageSize;
 
+    recieverSize = readInt(sock);
+    reciever = new char[recieverSize+1];
+    read(sock,reciever,recieverSize);
+    reciever[recieverSize] = 0;
+
+    messageSize = readInt(sock);
+    message = new char[messageSize+1];
+    read(sock,message,messageSize);
+    message[messageSize] = 0;
+
+    string command = "INSERT INTO public.pms(sender, reciever, message, date) VALUES ( '"; command.append(dbAccess.esc(username));
+    command += "', '"; command.append(dbAccess.esc(reciever));
+    command += "', '"; command.append(dbAccess.esc(message));
+    command += "', current_timestamp )";
+    dbAccess.exec(command);
+    dbAccess.commit();
 }
 
 int addFriend(int sock,char * username){
