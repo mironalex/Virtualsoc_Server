@@ -194,27 +194,26 @@ int getPosts(int sock,char * username){
     pch = strtok(NULL,":");
     count = strdup(pch);
     string command;
-    if(username == NULL || strlen(username) == 0){
-        if(strcmp(from,"GUEST")!=0) {
-            sendMessage(sock, "Error, client not logged in.");
-            return 0;
+    if(strcmp(from,"GUEST")==0){
+        command = "select author,text,to_char(date,'dd-mm-yyyy HH24:mm') from posts where type is NULL";
+        result r = dbAccess.exec(command);
+        sendMessage(sock,to_string(r.size()));
+        for(int i = 0; i < r.size(); i++){
+            sendMessage(sock,r[i][0].c_str());
+            sendMessage(sock,r[i][1].c_str());
+            sendMessage(sock,r[i][2].c_str());
         }
-        else{
-            command = "select author,text,to_char(date,'dd-mm-yyyy HH24:mm') from posts where type is NULL";
-            result r = dbAccess.exec(command);
-            sendMessage(sock,to_string(r.size()));
-            for(int i = 0; i < r.size(); i++){
-                sendMessage(sock,r[i][0].c_str());
-                sendMessage(sock,r[i][1].c_str());
-                sendMessage(sock,r[i][2].c_str());
-            }
-            return 1;
-        }
+        return 1;
+    }
+    if(username == NULL) {
+        sendMessage(sock, "Error, client not logged in.");
+        return 0;
     }
     if(strcmp(username,from) != 0) {
-        command = "select * from (select * from posts where author = \'";
+        command = "select author,text,to_char(date,'dd-mm-yyyy HH24:mm')  from posts join friends f on f.friend_username = author where author = '";
         command.append(dbAccess.esc(from));
-        command += "\' order by date desc ) as foo OFFSET ";
+        command += "' and posts.type <= f.type and username = '"; command.append(dbAccess.esc(username));
+        command+="' order by date desc OFFSET ";
         command.append(dbAccess.esc(index));
         command += " LIMIT ";
         command.append(count);
@@ -224,6 +223,7 @@ int getPosts(int sock,char * username){
         for(int i = 0; i < r.size(); i++){
             sendMessage(sock,r[i][0].as<string>());
             sendMessage(sock,r[i][1].as<string>());
+            sendMessage(sock,r[i][2].as<string>());
         }
         return 1;
     }
