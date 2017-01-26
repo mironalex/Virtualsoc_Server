@@ -187,6 +187,7 @@ int getPosts(int sock,char * username){
     bufferSize = readInt(sock);
     if(bufferSize < 10) {
         sendMessage(sock,"Bad get request.");
+        return 0;
     }
     read(sock,buffer,bufferSize);
     pch = strtok(buffer,":");
@@ -197,7 +198,7 @@ int getPosts(int sock,char * username){
     count = strdup(pch);
     string command;
     if(strcmp(from,"GUEST")==0){
-        command = "select author,text,to_char(date,'dd-mm-yyyy HH24:mm') from posts where type is NULL";
+        command = "select author,text,to_char(date,'dd-mm-yyyy HH24:mm') from posts where type = 0 order by date desc";
         result r = dbAccess.exec(command);
         sendMessage(sock,to_string(r.size()));
         for(int i = 0; i < r.size(); i++){
@@ -212,13 +213,16 @@ int getPosts(int sock,char * username){
         return 0;
     }
     if(strcmp(username,from) != 0) {
-        command = "select author,text,to_char(date,'dd-mm-yyyy HH24:mm')  from posts join friends f on f.friend_username = author where author = '";
+        command = "select author,text,to_char(date,'dd-mm-yyyy HH24:mm')  from posts join friends f on f.friend_username = author where (author = '";
         command.append(dbAccess.esc(from));
-        command += "' and posts.type <= f.type and username = '"; command.append(dbAccess.esc(username));
-        command+="' order by date desc OFFSET ";
+        command += "' and ((posts.type <= f.type and username = '"; command.append(dbAccess.esc(username));
+        command+="') or posts.type = 0)) order by date desc";
+        /*
+        command+=" OFFSET ";
         command.append(dbAccess.esc(index));
         command += " LIMIT ";
-        command.append(count);
+        command.append(dbAccess.esc(count));
+         */
         result r = dbAccess.exec(command);
         string postCount = to_string(r.size());
         sendMessage(sock,postCount);
@@ -236,8 +240,10 @@ int getPosts(int sock,char * username){
         command.append(username);
         command += "')) and f1.username = '"; command.append(username); command+="' and f1.type >= posts.type ";
         command +="order by date desc ";
+        /*
         command += "OFFSET "; command.append(index);
         command += " LIMIT "; command.append(count);
+         */
         result r = dbAccess.exec(command);
         string postCount = to_string(r.size());
         sendMessage(sock,postCount);
