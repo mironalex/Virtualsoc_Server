@@ -463,21 +463,85 @@ int inviteToGroup(int sock, char* username){
 int leaveGroup(int sock, char* username){
     connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
+    char * groupName;
+    int groupSize = readInt(sock);
+    groupName = new char[groupSize+1];
+    read(sock,groupName,groupSize);
+    groupName[groupSize] = 0;
+    string command = "DELETE FROM public.groups WHERE groupname='"; command.append(dbAccess.esc(groupName));
+    command+="' and username ='"; command.append(dbAccess.esc(username)); command+="'";
+    dbAccess.exec(command);
+    dbAccess.commit();
+
 }
 
 int sendGroupMessage(int sock, char* username){
     connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
+    char * groupName, * message;
+    int groupSize, messageSize;
+
+    groupSize = readInt(sock);
+    groupName = new char[groupSize+1];
+    read(sock,groupName,groupSize);
+    groupName[groupSize] = 0;
+
+    messageSize = readInt(sock);
+    message = new char[messageSize+1];
+    read(sock,message,messageSize);
+    message[messageSize] = 0;
+
+    string command = "INSERT INTO public.group_pms(username, groupname, message, date) VALUES ('";
+    command.append(dbAccess.esc(username)); command+= "', '";
+    command.append(dbAccess.esc(groupName)); command+= "', '";
+    command.append(dbAccess.esc(message)); command+="', current_timestamp)";
+    dbAccess.exec(command);
+    dbAccess.commit();
+    return 1;
 }
 
 int getGroupMessages(int sock, char* username){
     connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
+    char * groupName;
+    int groupSize = readInt(sock);
+    groupName = new char[groupSize+1];
+    read(sock,groupName,groupSize);
+    groupName[groupSize] = 0;
+
+    string command = "SELECT username,message,to_char(date,'dd-mm-yyyy HH:mm') from group_pms where groupname = '";
+    command.append(dbAccess.esc(groupName)); command+="'";
+
+    result r = dbAccess.exec(command);
+    sendMessage(sock,to_string(r.size()));
+    for(int i = 0; i < r.size(); i++){
+        sendMessage(sock,r[i][0].c_str());
+        sendMessage(sock,r[i][1].c_str());
+        sendMessage(sock,r[i][2].c_str());
+    }
+    return 1;
 }
 
 int getGroupParticipants(int sock, char* username){
     connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
+
+    char * groupName;
+    int groupSize = readInt(sock);
+    groupName = new char[groupSize+1];
+    read(sock,groupName,groupSize);
+    groupName[groupSize] = 0;
+
+    string command = "select username from groups where groupname = '"; command.append(dbAccess.esc(groupName));
+    command+="'";
+
+    result r = dbAccess.exec(command);
+    sendMessage(sock,to_string(r.size()));
+
+    for(int i = 0; i < r.size(); i++){
+        sendMessage(sock,r[i][0].c_str());
+    }
+    return 1;
 }
 
 int getGroupList(int sock, char* username){
