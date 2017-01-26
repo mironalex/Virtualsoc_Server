@@ -71,18 +71,20 @@ int openServerSocket(const char *servspec) {
 }
 
 void startConnection(int sock) {
-    ssize_t r;
     char *username = new char[26];
-
     while (getSocketState(sock) == OPEN) {
         unsigned long messageSize;
 		messageSize = readInt(sock);
-		if(messageSize != 3) break;
+		if(messageSize != 3){
+            sendMessage(sock,"Bad Request.");
+            break;
+        }
 		char * reqBuffer = new char[messageSize+1];
         reqBuffer[3] = 0;
 		read(sock,reqBuffer,messageSize);
 		handleRequest(reqBuffer,username,sock);
     }
+    delete[] username;
     close(sock);
 }
 

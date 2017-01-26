@@ -28,18 +28,23 @@ int handleRequest(string req, char * username, int sd){
 		getPosts(sd,username);
 	}
 	else if(req == MAKE_POST){
+        if(username == NULL) return 0;
 		makePost(sd,username);
 	}
 	else if(req == GET_PM){
+        if(username == NULL) return 0;
 		getPM(sd,username);
 	}
 	else if(req == SEND_PM){
+        if(username == NULL) return 0;
 		sendPM(sd,username);
 	}
 	else if(req == ADD_FRIEND){
+        if(username == NULL) return 0;
 	    addFriend(sd,username);
 	}
 	else if(req == DELETE_FRIEND){
+        if(username == NULL) return 0;
 	    deleteFriend(sd,username);
 	}
 	else if(req == REGISTER_USER){
@@ -49,27 +54,35 @@ int handleRequest(string req, char * username, int sd){
 	    loginUser(sd,username);
 	}
     else if(req == GET_FRIENDS){
+        if(username == NULL) return 0;
         getFriends(sd,username);
     }
     else if(req == GET_FRIEND_REQUESTS) {
+        if(username == NULL) return 0;
         getFriendRequests(sd, username);
     }
     else if(req == SEND_GROUP_MESSAGE){
+        if(username == NULL) return 0;
         sendGroupMessage(sd,username);
     }
     else if(req == GET_GROUP_MESSAGES){
+        if(username == NULL) return 0;
         getGroupMessages(sd,username);
     }
     else if(req == LEAVE_GROUP){
+        if(username == NULL) return 0;
         leaveGroup(sd,username);
     }
     else if(req == INVITE_TO_GROUP){
+        if(username == NULL) return 0;
         inviteToGroup(sd,username);
     }
     else if(req == GET_GROUP_PARTICIPANTS){
+        if(username == NULL) return 0;
         getGroupParticipants(sd,username);
     }
     else if(req == GET_GROUP_LIST){
+        if(username == NULL) return 0;
         getGroupList(sd,username);
     }
 	else{
@@ -181,9 +194,22 @@ int getPosts(int sock,char * username){
     pch = strtok(NULL,":");
     count = strdup(pch);
     string command;
-    if(username == NULL){
-        sendMessage(sock,"Error, client not logged in.");
-        return 0;
+    if(username == NULL || strlen(username) == 0){
+        if(strcmp(from,"GUEST")!=0) {
+            sendMessage(sock, "Error, client not logged in.");
+            return 0;
+        }
+        else{
+            command = "select author,text,to_char(date,'dd-mm-yyyy HH24:mm') from posts where type is NULL";
+            result r = dbAccess.exec(command);
+            sendMessage(sock,to_string(r.size()));
+            for(int i = 0; i < r.size(); i++){
+                sendMessage(sock,r[i][0].c_str());
+                sendMessage(sock,r[i][1].c_str());
+                sendMessage(sock,r[i][2].c_str());
+            }
+            return 1;
+        }
     }
     if(strcmp(username,from) != 0) {
         command = "select * from (select * from posts where author = \'";
@@ -202,7 +228,7 @@ int getPosts(int sock,char * username){
         return 1;
     }
     else{
-        command = "select author,text,to_char(date,'dd-mm-yyyy HH:mm') from posts join friends f1 on f1.friend_username = author where author in (select f.username from friends f where f.friend_username = '";
+        command = "select author,text,to_char(date,'dd-mm-yyyy HH24:mm') from posts join friends f1 on f1.friend_username = author where author in (select f.username from friends f where f.friend_username = '";
         command.append(username);
         command += "' and f.username in(select f2.friend_username from friends f2 where f2.username = '";
         command.append(username);
@@ -289,7 +315,7 @@ int getPM(int sock,char * username){
     partner[partnerSize] = 0;
     read(sock,partner,partnerSize);
 
-    string command ="select sender,message,to_char(date,'dd-mm-yyyy HH:mm') from pms where (sender = '"; command.append(username);
+    string command ="select sender,message,to_char(date,'dd-mm-yyyy HH24:mm') from pms where (sender = '"; command.append(username);
     command+= "' and reciever = '"; command.append(partner);
     command+= "') or (sender ='"; command.append(partner);
     command+= "' and reciever = '"; command.append(username); command+="') ORDER BY date asc";
@@ -509,7 +535,7 @@ int getGroupMessages(int sock, char* username){
     read(sock,groupName,groupSize);
     groupName[groupSize] = 0;
 
-    string command = "SELECT username,message,to_char(date,'dd-mm-yyyy HH:mm') from group_pms where groupname = '";
+    string command = "SELECT username,message,to_char(date,'dd-mm-yyyy HH24:mm') from group_pms where groupname = '";
     command.append(dbAccess.esc(groupName)); command+="'";
 
     result r = dbAccess.exec(command);
