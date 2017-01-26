@@ -16,9 +16,14 @@
 #define DELETE_FRIEND "DEL" //requests to delete a friend
 #define REGISTER_USER "REG" //requests to register a user
 #define LOGIN_USER "LOG" //requests to login
+#define SEND_GROUP_MESSAGE "SGM" // requests to send a group message
+#define GET_GROUP_MESSAGES "GGM" // requests to get all of the group messages from a specific group
+#define LEAVE_GROUP "LGR" // requests to leave a group
+#define INVITE_TO_GROUP "ITG" // requests to invite someone to a group
+#define GET_GROUP_PARTICIPANTS "GGP" // requests a list of all participants
+#define GET_GROUP_LIST "GGL" // requests a list of conversations
 
-
-void handleRequest(string req, char * username, int sd){
+int handleRequest(string req, char * username, int sd){
 	if(req == GET_POSTS){
 		getPosts(sd,username);
 	}
@@ -46,12 +51,31 @@ void handleRequest(string req, char * username, int sd){
     else if(req == GET_FRIENDS){
         getFriends(sd,username);
     }
-    else if(req == GET_FRIEND_REQUESTS){
-        getFriendRequests(sd,username);
+    else if(req == GET_FRIEND_REQUESTS) {
+        getFriendRequests(sd, username);
+    }
+    else if(req == SEND_GROUP_MESSAGE){
+        sendGroupMessage(sd,username);
+    }
+    else if(req == GET_GROUP_MESSAGES){
+        getGroupMessages(sd,username);
+    }
+    else if(req == LEAVE_GROUP){
+        leaveGroup(sd,username);
+    }
+    else if(req == INVITE_TO_GROUP){
+        inviteToGroup(sd,username);
+    }
+    else if(req == GET_GROUP_PARTICIPANTS){
+        getGroupParticipants(sd,username);
+    }
+    else if(req == GET_GROUP_LIST){
+        getGroupList(sd,username);
     }
 	else{
-        exit(1);
+        return 0;
     }
+    return 1;
 }
 
 int registerUser(int sock){
@@ -178,11 +202,12 @@ int getPosts(int sock,char * username){
         return 1;
     }
     else{
-        command = "select author,text,to_char(date,'dd-mm-yyyy HH:mm') from posts where author in (select f.username from friends f where f.friend_username = '";
+        command = "select author,text,to_char(date,'dd-mm-yyyy HH:mm') from posts join friends f1 on f1.friend_username = author where author in (select f.username from friends f where f.friend_username = '";
         command.append(username);
         command += "' and f.username in(select f2.friend_username from friends f2 where f2.username = '";
         command.append(username);
-        command += "'))order by date desc ";
+        command += "')) and f1.username = '"; command.append(username); command+="' and f1.type >= posts.type ";
+        command +="order by date desc ";
         command += "OFFSET "; command.append(index);
         command += " LIMIT "; command.append(count);
         result r = dbAccess.exec(command);
@@ -366,17 +391,16 @@ int addFriend(int sock,char * username){
 int deleteFriend(int sock,char * username){
     connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
-    work escaper(dbConnection);
     char * exFriend;
     int exFriendSize;
     exFriendSize = readInt(sock);
     exFriend = new char[exFriendSize+1];
     read(sock,exFriend,exFriendSize);
     exFriend[exFriendSize] = 0;
-    string command = "DELETE FROM public.friends WHERE (username = '"; command.append(escaper.esc(username));
-    command+= "' and friend_username = '"; command.append(escaper.esc(exFriend));
-    command+= ") or (username = '"; command.append(escaper.esc(exFriend));
-    command+= "' and friend_username = '"; command.append(escaper.esc(username));
+    string command = "DELETE FROM public.friends WHERE (username = '"; command.append(dbAccess.esc(username));
+    command+= "' and friend_username = '"; command.append(dbAccess.esc(exFriend));
+    command+= "') or (username = '"; command.append(dbAccess.esc(exFriend));
+    command+= "' and friend_username = '"; command.append(dbAccess.esc(username));
     command+="')";
     dbAccess.exec(command);
     dbAccess.commit();
@@ -408,4 +432,64 @@ int getFriendRequests(int sock, char* username){
     for(int i = 0; i < r.size(); i++){
         sendMessage(sock,r[i][0].c_str());
     }
+}
+
+int inviteToGroup(int sock, char* username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    work dbAccess(dbConnection);
+    char *user,*groupName;
+    int userSize,groupSize;
+
+    userSize = readInt(sock);
+    user = new char[userSize+1];
+    read(sock,user,userSize);
+    user[userSize] = 0;
+
+    groupSize = readInt(sock);
+    groupName = new char[groupSize+1];
+    read(sock,groupName,groupSize);
+    groupName[groupSize] = 0;
+
+    string command = "INSERT INTO public.groups(username, groupname) VALUES ('";
+    command.append(dbAccess.esc(user)); command+="', '"; command.append(dbAccess.esc(groupName)); command+="')";
+
+    dbAccess.exec(command);
+    dbAccess.commit();
+    delete[] user;
+    delete[] groupName;
+    return 1;
+}
+
+int leaveGroup(int sock, char* username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    work dbAccess(dbConnection);
+}
+
+int sendGroupMessage(int sock, char* username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    work dbAccess(dbConnection);
+}
+
+int getGroupMessages(int sock, char* username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    work dbAccess(dbConnection);
+}
+
+int getGroupParticipants(int sock, char* username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    work dbAccess(dbConnection);
+}
+
+int getGroupList(int sock, char* username){
+    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    work dbAccess(dbConnection);
+    string command = "select groupname from groups where username ='"; command.append(dbAccess.esc(username));
+    command+="'";
+    result r = dbAccess.exec(command);
+    string groupCount = to_string(r.size());
+    sendMessage(sock,groupCount);
+    for(int i = 0; i < r.size(); i++){
+        sendMessage(sock,r[i][0].c_str());
+    }
+    return 1;
 }
