@@ -95,24 +95,25 @@ int registerUser(int sock){
     connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
     char * password, *username;
-    result r;
-    int x = readInt(sock);
-    if(x > 52) {
-        sendMessage(sock,"Invalid request, user and or password too long...");
-        return 0;
+
+    int usernameSize = readInt(sock);
+    if(usernameSize > 25){
+        sendMessage(sock,"Error, user too long.");
     }
-    char buffer[100];
-    read(sock,buffer,x);
-    char * pch;
-    pch = strtok(buffer,":");
-    username = strdup(pch);
-    pch = strtok(NULL,":");
-    password = strdup(pch);
+    username = new char[usernameSize+1];
+    read(sock,username,usernameSize);
+    username[usernameSize] = 0;
+
+    int passwordSize = readInt(sock);
+    password = new char[passwordSize+1];
+    read(sock,password,passwordSize);
+    password[passwordSize] = 0;
+
     string command;
     command = "select username from users where username like \'";
     command.append(dbAccess.esc(username));
     command.append("\'");
-    r = dbAccess.exec(command);
+    result r = dbAccess.exec(command);
     if(r.size() > 0) {
         sendMessage(sock, "Error, duplicate user...");
         return 0;
@@ -144,20 +145,22 @@ int registerUser(int sock){
 int loginUser(int sock,char * username){
     connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
     work dbAccess(dbConnection);
-    char * password,buffer[100],passhash[1000];
-    int x;
-    x = readInt(sock);
-    if(x > 52) {
-        sendMessage(sock,"Invalid request, user and or password too long...");
+    char * password,passhash[1000];
+
+    int usernameSize = readInt(sock);
+    if(usernameSize > 25) {
+        sendMessage(sock,"Error, user too long");
         return 0;
     }
-    read(sock,buffer,x);
-    char * pch = strtok(buffer,":");
-    strcpy(username,pch);
-    username[strlen(pch)] = 0;
-    pch = strtok(NULL,":");
-    pch[strlen(pch)]='\0';
-    password = strdup(pch);
+
+    read(sock,username,usernameSize);
+    username[usernameSize] = 0;
+
+    int passwordSize = readInt(sock);
+    password = new char[usernameSize+1];
+    read(sock,password,passwordSize);
+    password[passwordSize] = 0;
+
     passToSHA512(password,passhash);
     string command = "select * from users where username like \'";
     command.append(dbAccess.esc(username));
@@ -169,10 +172,9 @@ int loginUser(int sock,char * username){
     if(r.size() == 1) {
         sendMessage(sock,"Login Successful.");
         return 1;
-    }
+    }\
     else {
         sendMessage(sock,"Login Failed.");
-        delete[] username;
         return 0;
     }
 }
@@ -347,7 +349,18 @@ int sendPM(int sock,char * username){
     read(sock,message,messageSize);
     message[messageSize] = 0;
 
-    string command = "INSERT INTO public.pms(sender, reciever, message, date) VALUES ( '"; command.append(dbAccess.esc(username));
+    string command = "select * from friends where (username ='"; command.append(dbAccess.esc(username));
+    command+= "' and friend_username='"; command.append(dbAccess.esc(reciever));
+    command+= "') or (username ='"; command.append(dbAccess.esc(reciever));
+    command+="' and friend_username='"; command.append(dbAccess.esc(username));
+    command+="')";
+
+    result r = dbAccess.exec(command);
+    if(r.size()!=2){
+        return 0;
+    }
+
+    command = "INSERT INTO public.pms(sender, reciever, message, date) VALUES ( '"; command.append(dbAccess.esc(username));
     command += "', '"; command.append(dbAccess.esc(reciever));
     command += "', '"; command.append(dbAccess.esc(message));
     command += "', current_timestamp )";
@@ -476,7 +489,45 @@ int inviteToGroup(int sock, char* username){
     read(sock,groupName,groupSize);
     groupName[groupSize] = 0;
 
-    string command = "INSERT INTO public.groups(username, groupname) VALUES ('";
+
+
+    //Check if the group already exists
+
+    string command = "select * from groups where groupname ='"; command.append(dbAccess.esc(groupName));
+    command+= "'";
+
+    result r1 = dbAccess.exec(command);
+
+    command+= " and username = '"; command.append(dbAccess.esc(username)); command+="'";
+
+    result r2 = dbAccess.exec(command);
+
+    if(r1.size() > 0 && r2.size() == 0){
+        //The group already exists and the user that invited someone is not in it.
+        return 0;
+    }
+
+    //Check if the one invited isn't already in the group.
+    command = "select * from groups where groupname ='"; command.append(dbAccess.esc(groupName));
+    command+= "' and username = '"; command.append(dbAccess.esc(user)); command+="'";
+
+    r1 = dbAccess.exec(command);
+    if(r1.size() != 0){
+        //The one invited is already in the group
+        return 0;
+    }
+
+    //Check if the one invited exists as a user
+
+    command = "select * from users where username ='"; command.append(dbAccess.esc(user)); command+="'";
+
+    r1 = dbAccess.exec(command);
+    if(r1.size() == 0){
+        //User does not exist
+        return 0;
+    }
+
+    command = "INSERT INTO public.groups(username, groupname) VALUES ('";
     command.append(dbAccess.esc(user)); command+="', '"; command.append(dbAccess.esc(groupName)); command+="')";
 
     dbAccess.exec(command);
@@ -517,7 +568,24 @@ int sendGroupMessage(int sock, char* username){
     read(sock,message,messageSize);
     message[messageSize] = 0;
 
-    string command = "INSERT INTO public.group_pms(username, groupname, message, date) VALUES ('";
+    string command = "select * from groups where groupname ='"; command.append(dbAccess.esc(groupName));
+    command+= "'";
+
+    result r1 = dbAccess.exec(command);
+    if(r1.size() == 0){
+        //The group to which the message is sent does not exist
+        return 0;
+    }
+
+    command+= " and username = '"; command.append(dbAccess.esc(username)); command+="'";
+
+    r1 = dbAccess.exec(command);
+    if(r1.size() == 0){
+        //The author of the message is not in the group
+        return 0;
+    }
+
+    command = "INSERT INTO public.group_pms(username, groupname, message, date) VALUES ('";
     command.append(dbAccess.esc(username)); command+= "', '";
     command.append(dbAccess.esc(groupName)); command+= "', '";
     command.append(dbAccess.esc(message)); command+="', current_timestamp)";
@@ -535,10 +603,22 @@ int getGroupMessages(int sock, char* username){
     read(sock,groupName,groupSize);
     groupName[groupSize] = 0;
 
-    string command = "SELECT username,message,to_char(date,'dd-mm-yyyy HH24:mm') from group_pms where groupname = '";
+    //Check if the user that requested the messages is in the group
+
+    string command = "select * from groups where groupname ='"; command.append(dbAccess.esc(groupName));
+    command+= "' and username = '"; command.append(dbAccess.esc(username)); command+="'";
+    result r = dbAccess.exec(command);
+
+    if(r.size() == 0){
+        //user is not in the group
+        return 0;
+    }
+
+
+    command = "SELECT username,message,to_char(date,'dd-mm-yyyy HH24:mm') from group_pms where groupname = '";
     command.append(dbAccess.esc(groupName)); command+="'";
 
-    result r = dbAccess.exec(command);
+    r = dbAccess.exec(command);
     sendMessage(sock,to_string(r.size()));
     for(int i = 0; i < r.size(); i++){
         sendMessage(sock,r[i][0].c_str());
@@ -558,10 +638,21 @@ int getGroupParticipants(int sock, char* username){
     read(sock,groupName,groupSize);
     groupName[groupSize] = 0;
 
-    string command = "select username from groups where groupname = '"; command.append(dbAccess.esc(groupName));
+    //Check if the user that requested the messages is in the group
+
+    string command = "select * from groups where groupname ='"; command.append(dbAccess.esc(groupName));
+    command+= "' and username = '"; command.append(dbAccess.esc(username)); command+="'";
+    result r = dbAccess.exec(command);
+
+    if(r.size() == 0){
+        //user is not in the group
+        return 0;
+    }
+
+    command = "select username from groups where groupname = '"; command.append(dbAccess.esc(groupName));
     command+="'";
 
-    result r = dbAccess.exec(command);
+    r = dbAccess.exec(command);
     sendMessage(sock,to_string(r.size()));
 
     for(int i = 0; i < r.size(); i++){

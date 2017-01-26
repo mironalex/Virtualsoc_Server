@@ -71,7 +71,8 @@ int openServerSocket(const char *servspec) {
 }
 
 void startConnection(int sock) {
-    char *username = new char[26];
+    char *username;
+    username = new char[26];
     while (getSocketState(sock) == OPEN) {
         unsigned long messageSize;
 		messageSize = readInt(sock);
