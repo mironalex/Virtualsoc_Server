@@ -16,15 +16,23 @@
 #include <pqxx/pqxx>
 #include "user.h"
 #include "requestHandler.h"
+
+/**
+ * A simple enum for the OPEN and CLOSED state of a socket
+ */
+
 enum sock_state {
-    OPEN, CLOSED
+    CLOSED, OPEN
 };
 
 using namespace std;
 using namespace pqxx;
 
-FILE * LOGS;
-
+/**
+ * A function used to monitor the state of the socket
+ * @param sock the variable the contains the socket that will be checked
+ * @return false if the socket is closed and true otherwise
+ */
 
 bool getSocketState(int sock) {
     fd_set rfd;
@@ -33,12 +41,18 @@ bool getSocketState(int sock) {
     timeval tv = {0};
     select(sock + 1, &rfd, 0, 0, &tv);
     if (!FD_ISSET(sock, &rfd))
-        return OPEN;
+        return CLOSED;
     int n = 0;
     ioctl(sock, FIONREAD, &n);
-    if (n == 0) return CLOSED;
-    else return OPEN;
+    if (n == 0) return OPEN;
+    else return CLOSED;
 }
+
+/**
+ * A function that returns a socket with the specifications given as an argument
+ * @param servspec a variable that contains all of the specifications of the server
+ * @return
+ */
 
 int openServerSocket(const char *servspec) {
     const int one = 1;
@@ -70,10 +84,15 @@ int openServerSocket(const char *servspec) {
     return sock;
 }
 
+/**
+ * The main function of each new thread, it's a simple loop which recieves a request then passes it to the request handler
+ * @param sock a variable containing the socket to the client
+ */
+
 void startConnection(int sock) {
     char *username;
     username = new char[26];
-    while (getSocketState(sock) == OPEN) {
+    while (getSocketState(sock) == CLOSED) {
         unsigned long messageSize;
 		messageSize = readInt(sock);
 		if(messageSize != 3){
@@ -89,6 +108,11 @@ void startConnection(int sock) {
     close(sock);
 }
 
+/**
+ * An endless loop function that waits for a new client then creates a new thread and socket for it
+ * @param server_spec a variable containing the server specifications
+ */
+
 void clientHandlerLoop(const char *server_spec) {
 	char * username;
     int sock = openServerSocket(server_spec);
@@ -101,10 +125,15 @@ void clientHandlerLoop(const char *server_spec) {
     }
 }
 
+/**
+ * the main function which just starts the client handler loop
+ * @param argc argument counter
+ * @param argv argv[1] should contain the server ip and port in the format ip:port otherwise the local host ip will be used with the port 1337
+ * @return
+ */
 
 int main(int argc, char *argv[]) {
 	const char *server = "127.0.0.1:1337";
-	LOGS = fopen("log.txt","w");
     signal(SIGPIPE, SIG_IGN);
     if (argc > 1) server = argv[1];
     clientHandlerLoop(server);
