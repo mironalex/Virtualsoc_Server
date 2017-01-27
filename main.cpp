@@ -115,12 +115,14 @@ void startConnection(int sock) {
  */
 
 void clientHandlerLoop(const char *server_spec) {
+	printf("Server is running.\n");
 	char * username;
     int sock = openServerSocket(server_spec);
     while (true) {
-        //printf("[server]Waiting for client connection\n");
+
+        printf("[server]Waiting for client connection\n");
         int new_client_sock = accept(sock, 0, 0);
-        //printf("[server]Recieved connection, creating new thread\n");
+        printf("[server]Recieved connection, creating new thread\n");
         std::thread t(startConnection, new_client_sock);
         t.detach();
     }

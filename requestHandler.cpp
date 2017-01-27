@@ -22,7 +22,7 @@
 #define INVITE_TO_GROUP "ITG" /**<macro for the invite to group request. */
 #define GET_GROUP_PARTICIPANTS "GGP" /**<macro for the get group participants request. */
 #define GET_GROUP_LIST "GGL" /// /**<macro for the get group list request. */
-
+#define DB_SPECS "dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432"
 int handleRequest(string req, char * username, int sd){
 	if(req == GET_POSTS){
 		getPosts(sd,username);
@@ -92,7 +92,7 @@ int handleRequest(string req, char * username, int sd){
 }
 
 int registerUser(int sock){
-    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    connection dbConnection(DB_SPECS);
     work dbAccess(dbConnection);
     char * password, *username;
 
@@ -143,7 +143,7 @@ int registerUser(int sock){
     return 1;
 }
 int loginUser(int sock,char * username){
-    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    connection dbConnection(DB_SPECS);
     work dbAccess(dbConnection);
     char * password,passhash[1000];
 
@@ -180,7 +180,7 @@ int loginUser(int sock,char * username){
 }
 
 int getPosts(int sock,char * username){
-    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    connection dbConnection(DB_SPECS);
     work dbAccess(dbConnection);
     char buffer[1000],*index,*count,*pch,*from;
     int bufferSize;
@@ -257,7 +257,7 @@ int getPosts(int sock,char * username){
 }
 
 int makePost(int sock,char * username){
-    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    connection dbConnection(DB_SPECS);
     work dbAccess(dbConnection);
     char buffer[300], *post,*pch,type[10];
     int bufferSize;
@@ -480,7 +480,7 @@ int getFriendRequests(int sock, char* username){
 }
 
 int inviteToGroup(int sock, char* username){
-    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    connection dbConnection(DB_SPECS);
     work dbAccess(dbConnection);
     char *user,*groupName;
     int userSize,groupSize;
@@ -544,7 +544,7 @@ int inviteToGroup(int sock, char* username){
 }
 
 int leaveGroup(int sock, char* username){
-    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    connection dbConnection(DB_SPECS);
     work dbAccess(dbConnection);
     char * groupName;
     int groupSize = readInt(sock);
@@ -559,9 +559,9 @@ int leaveGroup(int sock, char* username){
 }
 
 int sendGroupMessage(int sock, char* username){
-    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
-    work dbAccess(dbConnection);
+    connection dbConnection(DB_SPECS);
     char * groupName, * message;
+    work dbAccess(dbConnection);
     int groupSize, messageSize;
 
     groupSize = readInt(sock);
@@ -601,7 +601,7 @@ int sendGroupMessage(int sock, char* username){
 }
 
 int getGroupMessages(int sock, char* username){
-    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    connection dbConnection(DB_SPECS);
     work dbAccess(dbConnection);
     char * groupName;
     int groupSize = readInt(sock);
@@ -635,7 +635,7 @@ int getGroupMessages(int sock, char* username){
 }
 
 int getGroupParticipants(int sock, char* username){
-    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    connection dbConnection(DB_SPECS);
     work dbAccess(dbConnection);
 
     char * groupName;
@@ -668,7 +668,7 @@ int getGroupParticipants(int sock, char* username){
 }
 
 int getGroupList(int sock, char* username){
-    connection dbConnection("dbname=Virtualsoc_DB user=Virtualsoc_Admin password=admin hostaddr=127.0.0.1 port=5432");
+    connection dbConnection(DB_SPECS);
     work dbAccess(dbConnection);
     string command = "select groupname from groups where username ='"; command.append(dbAccess.esc(username));
     command+="'";
