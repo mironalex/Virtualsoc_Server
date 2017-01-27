@@ -27,11 +27,11 @@ using namespace pqxx;
 #ifndef USER_H
 #define USER_H
 
-int readInt (int fd);
+int readInt (int sock);
 
-void sendInt (int fd,int x);
+void sendInt (int sock,int value);
 
-void sendMessage(int fd, string message);
+void sendMessage(int sock, string message);
 
 int getUser(char *input, int n, FILE * input_stream);
 

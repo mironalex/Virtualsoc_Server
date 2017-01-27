@@ -5,27 +5,29 @@
 #include "user.h"
 
 /**
- * A function that reads an integer from a socket / file descriptor
- * @param fd file descriptor
+ * A function that reads an integer from a socket
+ * @param sock the socket descriptor from where the value is read
  * @return returns the integer that was read
  */
-int readInt (int fd){
-    int x = 0;
+int readInt (int sock){
+    int value = 0;
     ssize_t size;
-    size = read(fd, &x, 4);
-    if(size != 4) return -1;
-    return x;
+    size = read(sock, &value, 4);
+    if(size != 4){
+		return -1;
+	}
+    return value;
 }
 
 /**
  * A function that sends a message to a socket
- * @param fd socket / file descriptor
+ * @param sock socket to which the message is sent
  * @param message string that contains the message to be sent
  */
-void sendMessage(int fd, string message){
+void sendMessage(int sock, string message){
     unsigned long messageSize = message.size();
-    if( write(fd, (char *)&messageSize, 4) != 4) throw("Failed to write message size");
-    dprintf(fd,"%s",message.c_str());
+    write(sock, (char *)&messageSize, 4);
+    dprintf(sock,"%s",message.c_str());
 }
 
 /**
@@ -47,7 +49,7 @@ int getUser(char *input, int n, FILE * input_stream){
  * @param input the password will be saved here
  * @param n length of the password
  * @param input_stream FILE pointer from where the reading will be done
- * @return
+ * @return length of the username
  */
 
 int getPassword(char *input, int n, FILE * input_stream){
