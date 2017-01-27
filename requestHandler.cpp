@@ -6,22 +6,22 @@
 
 #include "requestHandler.h"
 
-#define GET_POSTS "GET" //requests to get posts from a user
-#define MAKE_POST "PST" //requests to make a post
-#define GET_PM "GPM" //requests to get a PM
-#define GET_FRIENDS "GFL" //requests to get the friend list of a user
-#define GET_FRIEND_REQUESTS "GFR" //requests to get all of the friend requests of a user
-#define SEND_PM "SPM" //requests to send a PM to a conversation
-#define ADD_FRIEND "ADD" //requests to add a friend
-#define DELETE_FRIEND "DEL" //requests to delete a friend
-#define REGISTER_USER "REG" //requests to register a user
-#define LOGIN_USER "LOG" //requests to login
-#define SEND_GROUP_MESSAGE "SGM" // requests to send a group message
-#define GET_GROUP_MESSAGES "GGM" // requests to get all of the group messages from a specific group
-#define LEAVE_GROUP "LGR" // requests to leave a group
-#define INVITE_TO_GROUP "ITG" // requests to invite someone to a group
-#define GET_GROUP_PARTICIPANTS "GGP" // requests a list of all participants
-#define GET_GROUP_LIST "GGL" // requests a list of conversations
+#define GET_POSTS "GET" /**<macro for the get posts request. */
+#define MAKE_POST "PST" /**<macro for the make post request. */
+#define GET_PM "GPM" /**<macro for the get PMs request. */
+#define GET_FRIENDS "GFL" /**<macro for the get friends request. */
+#define GET_FRIEND_REQUESTS "GFR" /**<macro for the get friend requests request. */
+#define SEND_PM "SPM" /**<macro for the send PM request. */
+#define ADD_FRIEND "ADD" /**<macro for the add friend request. */
+#define DELETE_FRIEND "DEL" /**<macro for the delete friend request. */
+#define REGISTER_USER "REG" /**<macro for the register user request. */
+#define LOGIN_USER "LOG" /**<macro for the login request. */
+#define SEND_GROUP_MESSAGE "SGM" /**<macro for the send group message request. */
+#define GET_GROUP_MESSAGES "GGM" /**<macro for the get group messages request. */
+#define LEAVE_GROUP "LGR" /**<macro for the leave group request. */
+#define INVITE_TO_GROUP "ITG" /**<macro for the invite to group request. */
+#define GET_GROUP_PARTICIPANTS "GGP" /**<macro for the get group participants request. */
+#define GET_GROUP_LIST "GGL" /// /**<macro for the get group list request. */
 
 int handleRequest(string req, char * username, int sd){
 	if(req == GET_POSTS){

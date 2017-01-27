@@ -16,6 +16,10 @@
 #include <pqxx/pqxx>
 #include "user.h"
 #include "requestHandler.h"
+
+/**
+ * Enum describing basic states of a socket
+ */
 enum sock_state {
     OPEN, CLOSED
 };
@@ -25,6 +29,11 @@ using namespace pqxx;
 
 FILE * LOGS;
 
+/**
+ * Simple function that checks the state of a socket
+ * @param sock The socket in question
+ * @return OPEN(false) or CLOSED(true)
+ */
 
 bool getSocketState(int sock) {
     fd_set rfd;
@@ -39,6 +48,12 @@ bool getSocketState(int sock) {
     if (n == 0) return CLOSED;
     else return OPEN;
 }
+
+/**
+ * Function that opens a socket with certain server specifications
+ * @param servspec the server specifications in question
+ * @return an open socket to the client
+ */
 
 int openServerSocket(const char *servspec) {
     const int one = 1;
@@ -70,6 +85,11 @@ int openServerSocket(const char *servspec) {
     return sock;
 }
 
+/**
+ * A function that loops while the socket given is still open passes the requests to a request handler
+ * @param sock a socket to a client
+ */
+
 void startConnection(int sock) {
     char *username;
     username = new char[26];
@@ -89,18 +109,29 @@ void startConnection(int sock) {
     close(sock);
 }
 
+/**
+ * A simple looped function that waits for a new connection then creates a new socket and thread for it
+ * @param server_spec the server specifications with which the socket is created
+ */
+
 void clientHandlerLoop(const char *server_spec) {
 	char * username;
     int sock = openServerSocket(server_spec);
     while (true) {
-        printf("[server]Waiting for client connection\n");
+        //printf("[server]Waiting for client connection\n");
         int new_client_sock = accept(sock, 0, 0);
-        printf("[server]Recieved connection, creating new thread\n");
+        //printf("[server]Recieved connection, creating new thread\n");
         std::thread t(startConnection, new_client_sock);
         t.detach();
     }
 }
 
+/**
+ * the main function of the application, the server ip can be given as a argument or hardcoded in the variable server
+ * @param argc classic main argument count
+ * @param argv classic main argument vector, you can specify an ip and port as the first argument in the format ip:port (i.e: 127.0.0.1:1337)
+ * @return usual main function returns.
+ */
 
 int main(int argc, char *argv[]) {
 	const char *server = "127.0.0.1:1337";

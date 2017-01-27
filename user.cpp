@@ -4,6 +4,11 @@
 
 #include "user.h"
 
+/**
+ * A function that reads an integer from a socket / file descriptor
+ * @param fd file descriptor
+ * @return returns the integer that was read
+ */
 int readInt (int fd){
     int x = 0;
     ssize_t size;
@@ -12,17 +17,38 @@ int readInt (int fd){
     return x;
 }
 
+/**
+ * A function that sends a message to a socket
+ * @param fd socket / file descriptor
+ * @param message string that contains the message to be sent
+ */
 void sendMessage(int fd, string message){
     unsigned long messageSize = message.size();
     if( write(fd, (char *)&messageSize, 4) != 4) throw("Failed to write message size");
     dprintf(fd,"%s",message.c_str());
 }
 
+/**
+ * Function that reads from the command line a user
+ * @param input the user will be saved here
+ * @param n length of the user
+ * @param input_stream FILE pointer from where the reading will be done
+ * @return length of the user
+ */
+
 int getUser(char *input, int n, FILE * input_stream){
     fgets(input, n, stdin);
     if(input[strlen(input)-1] == '\n') input[strlen(input)-1] = '\0';
     return strlen(input);
 }
+
+/**
+ * function that securely reads a password from a command line
+ * @param input the password will be saved here
+ * @param n length of the password
+ * @param input_stream FILE pointer from where the reading will be done
+ * @return
+ */
 
 int getPassword(char *input, int n, FILE * input_stream){
     struct termios old_term, new_term;
@@ -35,6 +61,12 @@ int getPassword(char *input, int n, FILE * input_stream){
     (void) tcsetattr(fileno(input_stream), TCSAFLUSH, &old_term);
     return strlen(input);
 }
+
+/**
+ * Function that takes a password as input and then stores its SHA512 hash into the 2nd argument
+ * @param pass the input password
+ * @param hexHash the output SHA512 hash
+ */
 
 void passToSHA512(const char *pass,char hexHash[1000]){
     unsigned char pass_digest[SHA512_DIGEST_LENGTH*2+1];
