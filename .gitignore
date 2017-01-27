@@ -1,4 +1,5 @@
 .idea
 log.txt
-server.out
+*.out
 doc/
+
